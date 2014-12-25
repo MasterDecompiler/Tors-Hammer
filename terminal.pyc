@@ -1,0 +1,84 @@
+ó
+¢ÒnMc           @   sB   d  d l  Z  d  d l Z d d d „  ƒ  YZ d d d „  ƒ  YZ d S(   iÿÿÿÿNt   TerminalControllerc           B   s  e  Z d  Z d Z d Z d Z d Z d Z d Z d Z	 d Z
+ d Z d Z d Z
+ d Z d Z d Z d Z d Z d Z d Z d Z Z Z Z Z Z Z Z d Z Z Z  Z! d Z" Z# Z$ Z% d j& ƒ  Z' d j& ƒ  Z( e) j* d „ Z+ d „  Z, d „  Z- d „  Z. RS(	   s[  
+    A class that can be used to portably generate formatted output to
+    a terminal.  
+    
+    `TerminalController` defines a set of instance variables whose
+    values are initialized to the control sequence necessary to
+    perform a given action.  These can be simply included in normal
+    output to the terminal:
+
+        >>> term = TerminalController()
+        >>> print 'This is '+term.GREEN+'green'+term.NORMAL
+
+    Alternatively, the `render()` method can used, which replaces
+    '${action}' with the string required to perform 'action':
+
+        >>> term = TerminalController()
+        >>> print term.render('This is ${GREEN}green${NORMAL}')
+
+    If the terminal doesn't support a given action, then the value of
+    the corresponding instance variable will be set to ''.  As a
+    result, the above code will still work on terminals that do not
+    support color, except that their output will not be colored.
+    Also, this means that you can test whether the terminal supports a
+    given action by simply testing the truth value of the
+    corresponding instance variable:
+
+        >>> term = TerminalController()
+        >>> if term.CLEAR_SCREEN:
+        ...     print 'This terminal supports clearning the screen.'
+
+    Finally, if the width and height of the terminal are known, then
+    they will be stored in the `COLS` and `LINES` attributes.
+    t    sã   
+    BOL=cr UP=cuu1 DOWN=cud1 LEFT=cub1 RIGHT=cuf1
+    CLEAR_SCREEN=clear CLEAR_EOL=el CLEAR_BOL=el1 CLEAR_EOS=ed BOLD=bold
+    BLINK=blink DIM=dim REVERSE=rev UNDERLINE=smul NORMAL=sgr0
+    HIDE_CURSOR=cinvis SHOW_CURSOR=cnorms.   BLACK BLUE GREEN CYAN RED MAGENTA YELLOW WHITEc   
+      C   s  y d d l  } Wn d SX| j ƒ  s+ d Sy | j ƒ  Wn d SX| j d ƒ |  _ | j d ƒ |  _ xE |  j D]: } | j d ƒ \ } } t |  | |  j	 | ƒ p¨ d ƒ qr W|  j	 d ƒ } | rxT t
+ t t |  j
+ ƒ ƒ |  j
+ ƒ D]. \ } } t |  | | j | | ƒ pd ƒ qç Wn  |  j	 d ƒ }	 |	 rŒxX t
+ t t |  j
+ ƒ ƒ |  j
+ ƒ D]2 \ } } t |  d	 | | j |	 | ƒ pd ƒ qSWn  d S(
+   sP  
+        Create a `TerminalController` and initialize its attributes
+        with appropriate values for the current terminal.
+        `term_stream` is the stream that will be used for terminal
+        output; if this stream is not a tty, then the terminal is
+        assumed to be a dumb terminal (i.e., have no capabilities).
+        iÿÿÿÿNt   colst   linest   =R   t   setft   setbt   BG_(   t   cursest   isattyt	   setuptermt   tigetnumt   COLSt   LINESt   _STRING_CAPABILITIESt   splitt   setattrt	   _tigetstrt   zipt   ranget   lent   _COLORSt   tparm(
+   t   selft   term_streamR   t
+   capabilityt   attribt   cap_namet   set_fgt   it   colort   set_bg(    (    s1   C:\Users\Shadi\Desktop\Torshammer 1.0\terminal.pyt   __init__O   s.    	     #.).c         C   s4   d d  l  } | j | ƒ p d } t j d d | ƒ S(   NiÿÿÿÿR   s   \$<\d+>[/*]?(   R   t   tigetstrt   ret   sub(   R   R   R   t   cap(    (    s1   C:\Users\Shadi\Desktop\Torshammer 1.0\terminal.pyR   v   s    c         C   s   t  j d |  j | ƒ S(   s±   
+        Replace each $-substitutions in the given template string with
+        the corresponding terminal control string (if it's defined) or
+        '' (if it's not).
+        s   \$\$|\${\w+}(   R"   R#   t   _render_sub(   R   t   template(    (    s1   C:\Users\Shadi\Desktop\Torshammer 1.0\terminal.pyt   render~   s    c         C   s4   | j  ƒ  } | d k r | St |  | d d !ƒ Sd  S(   Ns   $$i   iÿÿÿÿ(   t   groupt   getattr(   R   t   matcht   s(    (    s1   C:\Users\Shadi\Desktop\Torshammer 1.0\terminal.pyR%   †   s     N(/   t   __name__t
+   __module__t   __doc__t   BOLt   UPt   DOWNt   LEFTt   RIGHTt   CLEAR_SCREENt	   CLEAR_EOLt	   CLEAR_BOLt	   CLEAR_EOSt   BOLDt   BLINKt   DIMt   REVERSEt   NORMALt   HIDE_CURSORt   SHOW_CURSORt   NoneR   R
+   t   BLACKt   BLUEt   GREENt   CYANt   REDt   MAGENTAt   YELLOWt   WHITEt   BG_BLACKt   BG_BLUEt   BG_GREENt   BG_CYANt   BG_REDt
+   BG_MAGENTAt	   BG_YELLOWt   BG_WHITER   R   R   t   syst   stdoutR    R   R'   R%   (    (    (    s1   C:\Users\Shadi\Desktop\Torshammer 1.0\terminal.pyR       s8   !"'		t   ProgressBarc           B   s5   e  Z d  Z d Z d Z d „  Z d „  Z d „  Z RS(   s>  
+    A 3-line progress bar, which looks like::
+    
+                                Header
+        20% [===========----------------------------------]
+                           progress message
+
+    The progress bar is colored, if the terminal supports color
+    output; and adjusts to the width of the terminal.
+    s6   %3d%% ${GREEN}[${BOLD}%s%s${NORMAL}${GREEN}]${NORMAL}
+s   ${BOLD}${CYAN}%s${NORMAL}
+
+c         C   s«   | |  _  |  j  j o* |  j  j o* |  j  j s< t d ƒ ‚ n  |  j  j pK d |  _ | j |  j ƒ |  _	 |  j  j |  j
+ | j |  j ƒ ƒ |  _ d |  _
+ |  j d d ƒ d  S(   NsK   Terminal isn't capable enough -- you should use a simpler progress dispaly.iK   i   i    R   (   t   termR5   R0   R/   t
+   ValueErrorR   t   widthR'   t   BARt   bart   HEADERt   centert   headert   clearedt   update(   R   RS   RZ   (    (    s1   C:\Users\Shadi\Desktop\Torshammer 1.0\terminal.pyR       s    	$(	c         C   s²   |  j  r( t j j |  j ƒ d |  _  n  t |  j d | ƒ } t j j |  j j |  j j	 |  j j
+ |  j d | d | d |  j d | f |  j j
+ | j |  j ƒ ƒ d  S(   Ni    i
+   id   R   t   -(
+   R[   RP   RQ   t   writeRZ   t   intRU   RS   R/   R0   R5   RW   RY   (   R   t   percentt   messaget   n(    (    s1   C:\Users\Shadi\Desktop\Torshammer 1.0\terminal.pyR\   ¨   s    		c         C   sa   |  j  s] t j j |  j j |  j j |  j j |  j j |  j j |  j j ƒ d |  _  n  d  S(   Ni   (   R[   RP   RQ   R^   RS   R/   R5   R0   (   R   (    (    s1   C:\Users\Shadi\Desktop\Torshammer 1.0\terminal.pyt   clear²   s    		?(   R,   R-   R.   RV   RX   R    R\   Rc   (    (    (    s1   C:\Users\Shadi\Desktop\Torshammer 1.0\terminal.pyRR      s   
+		
+(    (    (   RP   R"   R    RR   (    (    (    s1   C:\Users\Shadi\Desktop\Torshammer 1.0\terminal.pyt   <module>   s   Œ
